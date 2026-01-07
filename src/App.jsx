@@ -82,7 +82,8 @@ function App() {
     
     const init = async () => {
       try {
-        const rpcProvider = new ethers.JsonRpcProvider('http://127.0.0.1:8545')
+        const rpcUrl = import.meta.env.VITE_RPC_URL
+        const rpcProvider = new ethers.JsonRpcProvider(rpcUrl)
         const nft = new ethers.Contract(contractAddresses.nft, NFT_ABI, rpcProvider)
         await loadTiers(nft)
         
