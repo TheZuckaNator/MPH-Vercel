@@ -1,0 +1,31 @@
+.tab-nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(10, 10, 15, 0.8);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.tab-nav button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.8rem;
+}
+
+.tab-nav button:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+
+.tab-nav button.active {
+  background: rgba(0, 255, 255, 0.1);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+.tab-icon { font-size: 1.1rem; }
