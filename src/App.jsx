@@ -105,30 +105,52 @@ function App() {
   }, [contractAddresses.nft, contractAddresses.tracking])
 
   // Connect wallet
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      showToast('Please install MetaMask', 'error')
-      return
+const connectWallet = async () => {
+  if (!window.ethereum) {
+    showToast('Please install MetaMask', 'error')
+    return
+  }
+  
+  try {
+    // Force switch to Sepolia
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0xaa36a7' }] // 11155111 in hex
+      })
+    } catch (switchError) {
+      // Chain not added, add it
+      if (switchError.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: '0xaa36a7',
+            chainName: 'Sepolia',
+            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+            rpcUrls: ['https://eth-sepolia.g.alchemy.com/v2/demo'],
+            blockExplorerUrls: ['https://sepolia.etherscan.io']
+          }]
+        })
+      }
     }
     
-    try {
-      const web3Provider = new ethers.BrowserProvider(window.ethereum)
-      await web3Provider.send("eth_requestAccounts", [])
-      const web3Signer = await web3Provider.getSigner()
-      const address = await web3Signer.getAddress()
-      const bal = await web3Provider.getBalance(address)
-      
-      setProvider(web3Provider)
-      setSigner(web3Signer)
-      setUserAddress(address)
-      setEthBalance(ethers.formatEther(bal))
-      
-      showToast('Wallet connected', 'success')
-    } catch (err) {
-      console.error(err)
-      showToast('Failed to connect', 'error')
-    }
+    const web3Provider = new ethers.BrowserProvider(window.ethereum)
+    await web3Provider.send("eth_requestAccounts", [])
+    const web3Signer = await web3Provider.getSigner()
+    const address = await web3Signer.getAddress()
+    const bal = await web3Provider.getBalance(address)
+    
+    setProvider(web3Provider)
+    setSigner(web3Signer)
+    setUserAddress(address)
+    setEthBalance(ethers.formatEther(bal))
+    
+    showToast('Wallet connected', 'success')
+  } catch (err) {
+    console.error(err)
+    showToast('Failed to connect', 'error')
   }
+}
 
   // Initialize contracts after wallet connects
   useEffect(() => {
