@@ -8,6 +8,7 @@ import Inventory from './components/Inventory'
 import AdminPanel from './components/AdminPanel'
 import Toast from './components/Toast'
 import TxModal from './components/TxModal'
+import StudioChainStore from './components/StudioChainStore'
 import { NFT_ABI, MARKETPLACE_ABI, TRACKING_ABI, KARRAT_ABI, EIP712_DOMAIN, APPROVAL_TYPES } from './utils/constants'
 import { getListings, addListing, removeListing, saveSignature, saveTransaction } from './utils/storage'
 import './App.css'
@@ -28,6 +29,14 @@ function App() {
     tracking: import.meta.env.VITE_TRACKING_CONTRACT || '',
     karrat: import.meta.env.VITE_KARRAT_CONTRACT || ''
   })
+
+const [studioChainContracts, setStudioChainContracts] = useState({ nft: null, marketplace: null })
+const [studioChainAddresses] = useState({
+  nft: import.meta.env.VITE_STUDIOCHAIN_NFT_CONTRACT || '',
+  marketplace: import.meta.env.VITE_STUDIOCHAIN_MARKETPLACE_CONTRACT || '',
+  rpcUrl: import.meta.env.VITE_STUDIOCHAIN_RPC_URL || ''
+})
+const [studioChainTiers, setStudioChainTiers] = useState([])
   
   const [tiers, setTiers] = useState([])
   const [userBalances, setUserBalances] = useState({})
@@ -277,6 +286,37 @@ const connectWallet = async () => {
     }
   }
 
+  // Buy from StudioChain (native ETH)
+  const buyStudioChain = async (tierName, tokenIds, amounts, priceWei) => {
+    if (!studioChainContracts.nft) return
+    
+    setTxModal({ show: true, status: 'pending', message: 'Purchasing with ETH...' })
+    
+    try {
+      const tier = studioChainTiers.find(t => t.name === tierName)
+      let totalPrice = BigInt(0)
+      for (let i = 0; i < tokenIds.length; i++) {
+        const idx = tier.tokenIds.indexOf(tokenIds[i])
+        totalPrice += BigInt(tier.prices[idx]) * BigInt(amounts[i])
+      }
+      
+      const tx = await studioChainContracts.nft.buyNFT(tierName, tokenIds, amounts, { value: totalPrice })
+      await tx.wait()
+      
+      setTxModal({ show: true, status: 'success', message: 'Purchase complete!' })
+      
+      // Reload tiers
+      await loadStudioChainTiers(studioChainContracts.nft)
+      
+      setTimeout(() => setTxModal({ show: false, status: '', message: '' }), 2000)
+      
+    } catch (err) {
+      console.error('StudioChain buy error:', err)
+      setTxModal({ show: true, status: 'error', message: err.reason || err.message })
+      setTimeout(() => setTxModal({ show: false, status: '', message: '' }), 3000)
+    }
+  }
+
   // Create listing
   const createListing = async (tokenId, amount, pricePerItem, deadline) => {
     if (!contracts.marketplace || !signer) return
@@ -449,6 +489,14 @@ const connectWallet = async () => {
         
         {activeTab === 'marketplace' && (
           <Marketplace listings={listings} userAddress={userAddress} onBuy={buyFromListing} onCancel={cancelListing} />
+        )}
+
+        {activeTab === 'studiochain' && (
+          <StudioChainStore 
+            tiers={studioChainTiers} 
+            onBuy={buyStudioChain} 
+            userAddress={userAddress} 
+          />
         )}
         
         {activeTab === 'inventory' && (
